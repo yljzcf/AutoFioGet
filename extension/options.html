@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>设置 · Frame.io 批注收集</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="options">
+    <h1>Frame.io 批注收集 · 设置</h1>
+
+    <section class="card">
+      <h2>分享链接</h2>
+      <p class="muted small" style="margin:0 0 8px">粘贴甲方用的免登录审阅链接，例如 <code>https://next.frame.io/share/…</code> 或 <code>https://f.io/…</code>。会抓取这个分享下所有文件夹里的视频批注。</p>
+      <form class="row" id="add-form">
+        <input type="url" id="share-url" class="grow" placeholder="https://next.frame.io/share/…" required>
+        <button class="primary" id="add-btn">添加</button>
+      </form>
+      <div id="add-status" class="small" style="margin-top:6px"></div>
+      <div id="shares" style="margin-top:8px"></div>
+      <details style="margin-top:8px">
+        <summary class="small muted">试用弹窗</summary>
+        <div class="row" style="margin-top:6px">
+          <button id="demo-unread">把最近 10 条批注设为未读</button>
+          <span id="demo-status" class="small"></span>
+        </div>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>检查频率</h2>
+      <div class="row">
+        <label class="row" style="display:flex">每
+          <select id="interval">
+            <option value="60">1 小时</option>
+            <option value="120">2 小时</option>
+            <option value="180">3 小时</option>
+            <option value="240">4 小时</option>
+            <option value="360">6 小时</option>
+            <option value="720">12 小时</option>
+            <option value="1">1 分钟（测试用）</option>
+          </select>
+          检查一次
+        </label>
+        <label class="row" style="display:flex"><input type="checkbox" id="notify"> 有新批注时弹出系统通知</label>
+      </div>
+      <p class="muted small" style="margin:8px 0 0">需要 Chrome 开着才会定时检查；电脑睡眠或 Chrome 关闭期间错过的检查，会在下次打开 Chrome 时补上。</p>
+    </section>
+
+    <section class="card">
+      <h2>同步到飞书 / Lark 多维表格（应用 API，含截图）</h2>
+      <p class="muted small" style="margin:0 0 8px">用你自己的自建应用写入多维表格：新批注自动建记录、批注被修改会同步更新、每条批注附上时间点的画面截图（时间段批注有开始和结束两张）。按「批注ID」去重，不会重复。</p>
+      <div style="display:grid; gap:10px">
+        <div class="row">
+          <label class="grow">App ID
+            <input type="text" id="lark-app-id" placeholder="cli_…" autocomplete="off">
+          </label>
+          <label class="grow">App Secret
+            <input type="password" id="lark-app-secret" autocomplete="off">
+          </label>
+        </div>
+        <fieldset style="border:0; padding:0; margin:0; display:grid; gap:4px">
+          <legend class="small" style="padding:0; margin-bottom:4px">写入身份</legend>
+          <label class="row" style="display:flex"><input type="radio" name="lark-mode" value="app"> 应用身份：以应用的名义写入。表格要在应用所在的组织，并把应用加为协作者。</label>
+          <label class="row" style="display:flex"><input type="radio" name="lark-mode" value="user"> 用户身份：以你授权的 Lark 账号写入。别的组织把表格分享给这个账号（可编辑）也能写。</label>
+        </fieldset>
+        <div id="user-auth" hidden>
+          <div class="card" style="display:grid; gap:6px">
+            <div class="row">
+              <span id="user-auth-status" class="small grow"></span>
+              <button id="lark-login">用 Lark 账号授权</button>
+              <button id="lark-logout">退出授权</button>
+            </div>
+            <div class="small muted">第一次授权前，先把这个地址加到应用的「安全设置 → 重定向 URL」（<a id="safe-link" target="_blank">打开安全设置</a>）：</div>
+            <div class="row"><code id="redirect-url" class="grow" style="overflow-wrap:anywhere"></code><button id="copy-redirect">复制</button></div>
+          </div>
+        </div>
+        <label>多维表格链接（打开那张表后复制浏览器地址栏，知识库里的表格也可以）
+          <input type="url" id="lark-base-url" placeholder="https://xxx.larksuite.com/base/…?table=tbl… 或 …/wiki/…?table=tbl…">
+        </label>
+        <div class="row">
+          <label>每次检查最多截图条数
+            <input type="number" id="max-shots" min="0" max="1000" style="width:100px">
+          </label>
+          <label class="row" style="display:flex; align-self:end"><input type="checkbox" id="lark-enabled"> 每次检查后自动同步</label>
+        </div>
+        <div class="row">
+          <button class="primary" id="save-lark">保存</button>
+          <button id="lark-test">测试连接</button>
+          <button id="lark-sync">立即同步</button>
+        </div>
+        <div id="lark-status" class="small"></div>
+        <details>
+          <summary>应用需要的权限（第一次配置看这里）</summary>
+          <ol class="steps small" style="margin-top:8px" id="steps-user" hidden>
+            <li>给应用开通<b>用户身份</b>权限：<a id="scope-link-user" target="_blank">打开权限申请页</a>（填好 App ID 后生成），勾选后提交。需要的权限：<code>base:table:read</code> <code>base:record:read</code> <code>base:record:create</code> <code>base:record:update</code> <code>docs:document.media:upload</code> <code>wiki:node:read</code> <code>offline_access</code>。然后在「版本管理与发布」创建并发布新版本。</li>
+            <li>把上面的重定向 URL 加到应用的「安全设置 → 重定向 URL」。插件文件夹换了位置，这个地址会变，要重新加。</li>
+            <li>点「用 Lark 账号授权」，在弹出的窗口里登录。有多个组织时，选<b>应用所在组织</b>的那个账号。</li>
+            <li>让多维表格的所有者把这个账号加为协作者（可编辑）。表格在别的组织时，那个组织需要允许对外分享。</li>
+            <li>回来点「测试连接」，能看到表里的记录数就说明配好了。之后每次同步会自动续期授权，连续 7 天没有同步才需要重新授权。</li>
+          </ol>
+          <ol class="steps small" style="margin-top:8px" id="steps-app">
+            <li>给应用开通权限：<a id="scope-link" target="_blank">打开权限申请页</a>（填好 App ID 和多维表格链接后生成），勾选后提交。需要的权限：<code>base:table:read</code> <code>base:record:read</code> <code>base:record:create</code> <code>base:record:update</code> <code>docs:document.media:upload</code>。</li>
+            <li>在开发者后台「版本管理与发布」创建一个新版本并发布（权限要发布后才生效；企业管理员可能需要审核）。</li>
+            <li>把应用加为这个多维表格的协作者（可编辑）：多维表格右上角「…」→「更多」→「添加文档应用」，搜索应用名。</li>
+            <li>回来点「测试连接」，能看到表里的记录数就说明配好了。</li>
+          </ol>
+        </details>
+      </div>
+    </section>
+
+    <details class="card">
+      <summary><b>备选：webhook 推送（只推文字，不含截图）</b></summary>
+      <div style="display:grid; gap:10px; margin-top:10px">
+        <label>Webhook 地址
+          <input type="url" id="webhook-url" placeholder="https://xxx.feishu.cn/base/automation/webhook/event/…">
+        </label>
+        <label>凭证 Bearer token（可选，工作流里开启了「凭证校验」才需要）
+          <input type="password" id="webhook-token" autocomplete="off">
+        </label>
+        <div class="row">
+          <label>每批条数（= 工作流「循环」节点的最大循环次数）
+            <select id="batch-size">
+              <option value="5">5 条（免费版 / 商业标准版）</option>
+              <option value="100">100 条（商业专业版）</option>
+              <option value="1000">1000 条（旗舰版 / 企业版）</option>
+            </select>
+          </label>
+          <label>每次检查最多推送批数
+            <input type="number" id="max-batches" min="1" max="1000" style="width:100px">
+          </label>
+        </div>
+        <label class="row" style="display:flex"><input type="checkbox" id="push-enabled"> 每次检查后自动推送新批注</label>
+        <div class="row">
+          <button class="primary" id="save-feishu">保存</button>
+          <button id="push-test">发送测试数据</button>
+          <button id="push-now">立即推送未同步（<span id="n-pending">0</span> 条）</button>
+          <button id="mark-synced">全部标记为已同步</button>
+        </div>
+        <div id="feishu-status" class="small"></div>
+        <details>
+          <summary>飞书那边怎么配置？</summary>
+          <ol class="steps small" style="margin-top:8px">
+            <li>在多维表格里建一张数据表，字段见 README（分享名称、文件夹、视频、编号、类型、回复对象、开始时间码、结束时间码、开始秒数、作者、内容、创建时间、编辑时间、已完成、视频链接、首次抓取时间、批注ID）。</li>
+            <li>左下角「新建 → 工作流」，触发条件选「接收到 webhook 时」，复制 webhook 地址填到上面并保存。</li>
+            <li>在触发器的「输出设置」里选「通过发送请求设置」，回到这里点「发送测试数据」，再回飞书点「生成」。</li>
+            <li>添加「循环」节点：需要依次处理的数据选 webhook 返回值里的 <code>items</code>，最大循环次数按你的飞书版本填（和上面的「每批条数」一致）。</li>
+            <li>在循环里添加「新增记录」，选上面那张表，每个字段引用「当前循环数据」的同名字段。保存并启用。</li>
+            <li>存量批注很多、又是免费版时：先在弹窗里「导出全部 CSV」导入多维表格，再点「全部标记为已同步」，之后只推新增的。</li>
+          </ol>
+        </details>
+      </div>
+    </details>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

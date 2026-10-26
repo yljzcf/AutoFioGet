@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Frame.io 批注收集</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="popup" id="app">
+    <div class="row">
+      <h1 class="grow">Frame.io 批注收集</h1>
+      <button id="settings" title="设置">设置</button>
+    </div>
+
+    <div id="empty" class="card" hidden>
+      还没有添加分享链接。<br>
+      <button class="primary" id="add-first" style="margin-top:8px">去添加分享链接</button>
+    </div>
+
+    <section id="main" hidden>
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><b id="n-shares">0</b><span class="muted">个分享</span></div>
+          <div class="stat"><b id="n-comments">0</b><span class="muted">条批注/回复</span></div>
+          <div class="stat" id="pending-wrap" hidden><b id="n-pending">0</b><span class="muted">条未同步飞书</span></div>
+        </div>
+        <div id="status" class="small" style="margin-top:6px"></div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="check">立即检查</button>
+        <button id="export-new">导出新增 CSV</button>
+        <button id="export-all">导出全部 CSV</button>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <h2 class="grow" id="list-title" style="margin:0">未读批注</h2>
+        <button id="read-all" hidden>全部已读</button>
+      </div>
+      <p class="muted small" id="list-hint" style="margin:2px 0 8px">点视频名展开；点批注打开网页并标为已读；向右滑动标为已读（滑视频名 = 整组已读）</p>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
